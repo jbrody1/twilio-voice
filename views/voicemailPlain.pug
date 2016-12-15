@@ -1,0 +1,13 @@
+| Twilio:
+= '\n' + twilio + '\n\n'
+| Watson:
+= '\n' + watson + '\n\n'
+= 'Download Audio: ' + recordingUrl + '\n'
+| --
+= '\n'
+| Sent using Splay voice-to-email. 
+- if (hasAuth)
+	| Reply to text the sender back.
+	= '\nReturn Call: ' + dialerUrl
+- else
+	= 'To enable replies, login here: ' + loginUrl

@@ -1,0 +1,28 @@
+html
+	p
+		| Twilio:
+		br
+		= twilio
+
+	p
+		| Watson:
+		br
+		= watson
+
+	audio(controls="controls")
+		source(src=recordingUrl)
+		a(href=recordingUrl) Play Audio
+
+	p
+		| --
+		br
+		| Sent using Splay voice-to-email. 
+		- if (hasAuth)
+			| Reply to text the sender back.
+			br
+			a(href=dialerUrl) Return Call
+		- else
+			| To enable replies, 
+			a(href=loginUrl) login
+			| .
+

@@ -1,0 +1,46 @@
+{
+  "name": "twilio-voice",
+  "version": "0.0.1",
+  "description": "Twilio Voice using Webtask",
+  "main": "src/twilio-voice.js",
+  "scripts": {
+    "start": "node src/run.js",
+    "test": "node src/test.js"
+  },
+  "dependencies": {
+    "promise": "7.0.1",
+    "stream-to-promise": "1.0.4",
+    "request": "2.56.0",
+    "express": "4.14.0",
+    "pug": "2.0.0-beta6",
+    "winston": "1.0.0",
+    "watson-developer-cloud": "2.0.1",
+    "body-parser": "1.12.4",
+    "useragent": "2.1.6",
+    "uuid": "2.0.1",
+    "extend": "2.0.1",
+    "json3": "3.3.2",
+    "html-entities": "1.2.0",
+    "googleapis": "2.1.6",
+    "gcloud": "0.36.0",
+    "twilio": "2.2.1",
+    "nodemailer": "2.5.0",
+    "auth0": "2.4.0",
+    "webtask-tools": "*"
+  },
+  "engines": {
+    "node": "4.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jbrody1/twilio-voice"
+  },
+  "keywords": [
+    "node",
+    "express",
+    "twilio",
+    "webtask"
+  ],
+  "author": "John Brody",
+  "license": "MIT"
+}

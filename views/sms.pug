@@ -1,0 +1,19 @@
+html
+	p
+		each line in text.split('\n')
+			= line
+			br
+
+	p
+		| --
+		br
+		| Sent using Splay voice-to-email. 
+		- if (hasAuth)
+			| Reply to text the sender back.
+			br
+			a(href=dialerUrl) Return Call
+		- else
+			| To enable replies, 
+			a(href=loginUrl) login
+			| .
+
