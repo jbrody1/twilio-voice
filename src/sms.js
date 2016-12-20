@@ -10,32 +10,16 @@ var twilio = require('twilio');
 var promise = require('promise');
 var pug = require('pug');
 
-var twiml = function(req, res) {
-	var phoneNumbers = utils.stringArray(req.params.phone);
-	var twiml = new twilio.TwimlResponse();
-	for (var i=0; i<phoneNumbers.length; i++) {
-		twiml.message(req.params.From + ': ' + req.params.Body, {
-			/* from: req.params.From */
-			to: phoneNumbers[i]
-		});
-	}
-	res.writeHead(200, { 'Content-Type': 'text/xml' });
-	res.write(twiml.toString());
-	return promise.resolve();
-};
-
 module.exports.handleSms = function(req, res) {
+	// handle an incoming sms and return twiml to forward it and send email
 	if (req.params.email) {
 		auth.getOrCreateUser(req.params.email, req.params.AccountSid)
 		.then(function(user) {
-			var hasAuth = auth.hasTwilioAuth(user);
-			var p = promise.resolve(req.params.From);
-			if (hasAuth) {
-				var client = new twilio.RestClient(user.app_metadata.twilio_account_sid, user.app_metadata.twilio_auth_token);
-				p = voice.tryFormat(client, req.params.From);
-			}
-			return p
+			// format phone number
+			return voice.tryFormat(user, req.params.From)
+			// generate email
 			.then(function(formattedPhone) {
+				var hasAuth = auth.hasTwilioAuth(user);
 				var dialerUrl = email.generateDialerUrl(user.email, req.params.To, req.params.From);
 				var loginUrl = email.generateLoginUrl(user.email);
 				var params = {
@@ -45,26 +29,42 @@ module.exports.handleSms = function(req, res) {
 					dialerUrl: dialerUrl,
 					loginUrl: loginUrl,
 				};
-				var message = email.generateHeaders(hasAuth, {
+				return email.generateHeaders({
 					from: req.params.From,
 					to: req.params.To,
 					email: user.email,
+					hasAuth: hasAuth,
 					formattedPhone: formattedPhone,
 					subject: 'SMS from ' + formattedPhone,
 					html: pug.render(views.sms, params),
 					text: pug.render(views.smsPlain, params),
 				});
-				return message;
 			})
+			// send email
 			.then(email.sendGmail);
 		})
 		.catch(utils.logError);
 	}
-	return twiml(req, res);
+	return promise.resolve()
+	// generate twiml response to forward sms to phone numbers specified in the request
+	.then (function() {
+		var phoneNumbers = utils.stringArray(req.params.phone);
+		var twiml = new twilio.TwimlResponse();
+		for (var i=0; i<phoneNumbers.length; i++) {
+			twiml.message(req.params.From + ': ' + req.params.Body, {
+				// Twilio does not allow true sms forwarding; submitted feature request
+				/* from: req.params.From */
+				to: phoneNumbers[i]
+			});
+		}
+		res.writeHead(200, { 'Content-Type': 'text/xml' });
+		res.write(twiml.toString());
+	});
 };
 
 module.exports.sendSms = function(sms) {
 	if (sms.twilioAccountSid && sms.twilioAuthToken) {
+		// send sms
 		var client = new twilio.RestClient(sms.twilioAccountSid, sms.twilioAuthToken);
 		var message = {
 			from: sms.from,

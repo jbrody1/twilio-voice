@@ -11,32 +11,27 @@ var querystring = require('querystring');
 var entities = require('html-entities').AllHtmlEntities;
 var nodemailer = require('nodemailer');
 var google = require('googleapis');
-
-var identity = {
-	id: env.google_id,
-	refresh_token: env.google_refresh_token,
-};
-
-var oauth = new google.auth.OAuth2(
-	env.google_client_id,
-	env.google_client_secret
-);
-oauth.setCredentials(identity);
-google.options({ auth: oauth });
-
 var gmail = google.gmail('v1');
-
 var gcloud = require('gcloud')({
 	projectId: env.google_project_id,
 	credentials: json.parse(env.google_cloud_json),
 });
 
-var parts = identity.id.split('@');
-if (parts.length !== 2) {
-	throw new Error('invalid gateway email: ' + gatewayEmail);
-}
+// set up oauth credentials for our gmail account
+var oauth = new google.auth.OAuth2(
+	env.google_client_id,
+	env.google_client_secret
+);
+
+oauth.setCredentials({
+	id: env.google_id,
+	refresh_token: env.google_refresh_token,
+});
+
+google.options({ auth: oauth });
 
 var parseEmailFromHeader = function(address) {
+	// parse "First Last <first.last@example.com>" into "first.last@example.com"
 	var regex = /.?([a-zA-Z0-9_.+-]+@[a-zA-Z0-9_.+-]+\.[a-zA-Z]{2,4}).?/g;
 	var match = regex.exec(address);
 	if (match) address = match[1];
@@ -44,6 +39,7 @@ var parseEmailFromHeader = function(address) {
 };
 
 var parsePhoneNumbersFromEmail = function(address) {
+	// parse "email.+12345678900.+19876543210@example.com" into ["+12345678900", "+19876543210"]
 	var regex = /.*(\+\d+).(\+\d+)@.*/g;
 	var phones = [];
 	var match = regex.exec(address);
@@ -55,6 +51,7 @@ var parsePhoneNumbersFromEmail = function(address) {
 };
 
 var parseBodyFromThread = function(body) {
+	// parse "foo bar On Tuesday, January 5, email@example.com wrote: > baz qux" into "foo bar"
 	var regex = /^(.+?)(?:\sOn.*@.*wrote.*)$/g;
 	var match = regex.exec(body);
 	if (match) body = match[1];
@@ -62,37 +59,44 @@ var parseBodyFromThread = function(body) {
 };
 
 var generateReplyTo = function(hasAuth, from, to) {
+	// given a from and to phone number, generate the email to SMS gateway address
 	if (hasAuth && from && to) {
 		if (to.indexOf('+') !== 0) {
 			to = '+' + to;
 		}
+		var parts = env.google_id.split('@');
 		return parts[0] + to + '.' + from + '@' + parts[1];
 	} else {
 		return 'no-reply@gmail.com';
 	}
 };
 
-module.exports.generateDialerUrl = function(mail, from, to) {
+module.exports.generateDialerUrl = function(email, from, to) {
+	// given an email, from, and to phone numbers, generate a link to the soft phone dialer
 	var query = querystring.stringify({
-		email: mail,
+		email: email,
 		from: from,
 		to: to,
 	});
 	return env.webtask_container + '/twilio-voice/dialer?' + query;
 };
 
-module.exports.generateLoginUrl = function(mail) {
+module.exports.generateLoginUrl = function(email) {
+	// given an email, generate a link to login
 	return env.auth0_login_url;
 };
 
-module.exports.generateHeaders = function(hasAuth, message) {
+module.exports.generateHeaders = function(message) {
+	// given an email message with phone numbers in from and to fields,
+	// populate correct values for from, to, and reply-to SMTP headers
 	var from = message.from;
 	var to = message.to;
+	var hasAuth = message.hasAuth;
 	var replyTo = generateReplyTo(hasAuth, from, to);
 	if (from) {
-		message.from = '"' + (message.formattedPhone || from) + '" <' + identity.id + '>';
+		message.from = '"' + (message.formattedPhone || from) + '" <' + env.google_id + '>';
 	} else {
-		message.from = identity.id;
+		message.from = env.google_id;
 	}
 	if (message.email) {
 		message.to = message.email;
@@ -101,7 +105,7 @@ module.exports.generateHeaders = function(hasAuth, message) {
 	return message;
 };
 
-module.exports.sendGmail = function(email) {
+module.exports.sendGmail = function(message) {
 	return promise.denodeify(oauth.getAccessToken.bind(oauth))()
 	.then(function(token) {
 		return nodemailer.createTransport({
@@ -120,11 +124,12 @@ module.exports.sendGmail = function(email) {
 		});
 	})
 	.then(function(mailer) {
-		return promise.denodeify(mailer.sendMail.bind(mailer))(email);
+		return promise.denodeify(mailer.sendMail.bind(mailer))(message);
 	});
 };
 
 var renewSubscriptionIfNecessary = function(data) {
+	// check subscription status, renew if close to expiration, and update data
 	return promise.resolve()
 	.then(function() {
 		var subscriptionId = (data && data.gmail && data.gmail.subscriptionId) || null;
@@ -205,42 +210,56 @@ var receiveGmail = function(ctx, data) {
 	});
 };
 
-var emailToSms = function(messages) {
-	return promise.resolve(messages)
-	.then(function(messages) {
-		return messages.sort(function(a, b) {
+var emailToSms = function(emails) {
+	return promise.resolve(emails)
+	// sort by email timestamp
+	.then(function(emails) {
+		return emails.sort(function(a, b) {
 			return a.time - b.time;
 		});
 	})
-	.then(function(messages) {
-		logger.debug('received emails', messages);
-		return promise.all(messages.map(function(message) {
-			logger.debug('parsing email', message);
-			var from = parseEmailFromHeader(message.from);
-			return auth.getOrCreateUser(from)
+	// convert emails to sms
+	.then(function(emails) {
+		logger.debug('received emails', emails);
+		return promise.all(emails.map(function(email) {
+			logger.debug('parsing email', email);
+			var phones = parsePhoneNumbersFromEmail(email.to);
+			var body = parseBodyFromThread(email.body);
+			if (phones && phones.length == 2 && body) {
+				return {
+					email: parseEmailFromHeader(email.from),
+					from: phones[0],
+					to: phones[1],
+					body: body,
+				};
+			} else {
+				logger.error('unable to convert to sms', message);
+			}
+		}));
+	})
+	// filter nulls
+	.then(utils.filterNulls)
+	// attach user's twilio credentials
+	.then(function(txts) {
+		return promise.all(txts.map(function(txt) {
+			return auth.getOrCreateUser(txt.email)
 			.then(function(user) {
 				if (auth.hasTwilioAuth(user)) {
-					var phones = parsePhoneNumbersFromEmail(message.to);
-					var body = parseBodyFromThread(message.body);
-					if (phones && phones.length == 2 && body) {
-						var txt = {
-							from: phones[0],
-							to: phones[1],
-							body: body,
-							twilioAccountSid: user.app_metadata.twilio_account_sid,
-							twilioAuthToken: user.app_metadata.twilio_auth_token,
-						};
-						logger.debug('sending sms for user', user);
-						return sms.sendSms(txt);
-					} else {
-						logger.error('unable to convert to sms', message);
-					}
+					logger.debug('sending sms for user', user);
+					txt.twilioAccountSid = user.app_metadata.twilio_account_sid;
+					txt.twilioAuthToken = user.app_metadata.twilio_auth_token;
+					return txt;
 				} else {
 					logger.warn('not sending sms for user with no twilio credentials', user);
 				}
-				return promise.resolve();
 			});
 		}));
+	})
+	// filter nulls
+	.then(utils.filterNulls)
+	// send sms
+	.then(function(txts) {
+		return promise.all(txts.map(sms.sendSms));
 	});
 };
 

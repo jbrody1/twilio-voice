@@ -3,15 +3,20 @@ var env = require('./env');
 var utils = require('./utils');
 var logger = utils.logger;
 var uuid = require('uuid');
-var auth0 = require('auth0@2.4.0');
-//var auth0 = require('auth0');
+// hack for webtask: including auth0 module without explicit version fails
+var auth0 = function() {
+	try { return require('auth0@2.4.0'); }
+	catch (err) { return require('auth0'); }
+}();
 var mgr = new auth0.ManagementClient({
 	token: env.auth0_token,
 	domain: env.auth0_domain,
 });
 
 module.exports.getOrCreateUser = function(email, accountSid) {
+	// normalize email
 	email = email.toLowerCase();
+	// try to fetch user
 	return mgr.users.getAll({
 		q: 'email.raw:"' + email + '"',
 		fields: 'user_id,email,app_metadata',
@@ -44,12 +49,14 @@ module.exports.getOrCreateUser = function(email, accountSid) {
 			logger.info('updating user', update);
 			return mgr.users.update(user, update);
 		} else {
+			// retrieve
 			return user;
 		}
 	});
 };
 
 module.exports.hasTwilioAuth = function(user) {
+	// does the user have twilio credentials
 	return  user &&
 		user.app_metadata &&
 		user.app_metadata.twilio_account_sid &&

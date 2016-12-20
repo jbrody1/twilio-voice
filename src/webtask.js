@@ -5,7 +5,7 @@ var webtask = wt.fromExpress(server.app);
 
 var auth = {
 	authorized: [ 'splay.corp@gmail.com' ],
-	exclude: [ '/sms', '/voice' ],
+	exclude: [ '/sms', '/voice', '/voicemail', '/email', '/sip' ],
 	scope: 'app_metadata',
 };
 

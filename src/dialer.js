@@ -8,6 +8,7 @@ var querystring = require('querystring');
 var useragent = require('useragent');
 
 module.exports.handleDialer = function(req, res) {
+	// get user
 	return auth.getOrCreateUser(req.params.email)
 	.then(function(user) {
 		var agent = useragent.lookup(req.headers['user-agent']);
@@ -16,6 +17,7 @@ module.exports.handleDialer = function(req, res) {
 		var isMobile = ['Android', 'iOS'].some(function(sub){ return agent.os.family.indexOf(sub) >= 0; });
 		var useVoip = auth.hasTwilioAuth(user) && hasWebRTC && !isMobile;
 		if (useVoip) {
+			// if using voip, redirect to the soft phone dialer page
 			var capability = new twilio.Capability(user.app_metadata.twilio_account_sid, user.app_metadata.twilio_auth_token);
 			capability.allowClientOutgoing('AP8532d2cd0cbe2c84a7c9be698c9537c7');
 			var token = capability.generate();
@@ -26,6 +28,7 @@ module.exports.handleDialer = function(req, res) {
 			});
 			res.redirect(env.dialer_location + hash);
 		} else {
+			// otherwise, redirect to a phone dialer
 			res.redirect('tel:' + req.params.to);
 		}
 	});

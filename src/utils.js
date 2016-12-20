@@ -36,3 +36,7 @@ module.exports.stringArray = function(strs) {
 	}
 };
 
+module.exports.filterNulls = function(arr) {
+	return arr.filter(function(el) { return el; });
+};
+
