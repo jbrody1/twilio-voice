@@ -8,6 +8,7 @@ fi
 . env.properties
 
 if [ -z "${webtask_container}" ] || \
+   [ -z "${sentry_yrl}" ] || \
    [ -z "${dialer_location}" ] || \
    [ -z "${watson_stt_username}" ] || \
    [ -z "${watson_stt_password}" ]
@@ -32,6 +33,7 @@ echo "Loaded env.properties"
 cat > src/env.js <<EOL
 'use strict';
 module.exports.webtask_container = '${webtask_container}';
+module.exports.sentry_url = '${sentry_url}';
 module.exports.dialer_location = '${dialer_location}';
 module.exports.watson_stt_username = '${watson_stt_username}';
 module.exports.watson_stt_password = '${watson_stt_password}';
@@ -68,8 +70,8 @@ done
 
 echo "Wrote src/views.js"
 
-wt create -b src/webtask.js -n twilio-voice-stage
-#wt create -b src/webtask.js -n twilio-voice
+wt create --bundle src/webtask.js -n twilio-voice-stage
+wt create --bundle src/webtask.js -n twilio-voice
 #wt create src/google-verification.js -n google19fff256032e0baf.html
 #wt-bundle -m -o build/webtask.js src/webtask.js
 
