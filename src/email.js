@@ -52,7 +52,7 @@ var parsePhoneNumbersFromEmail = function(address) {
 
 var parseBodyFromThread = function(body) {
 	// parse "foo bar On Tuesday, January 5, email@example.com wrote: > baz qux" into "foo bar"
-	var regex = /^(.+?)(?:\sOn.*@.*wrote.*)$/g;
+	var regex = /^(.+?)(?:\s*)(On.*@.*wrote.*)$/gm;
 	var match = regex.exec(body);
 	if (match) body = match[1];
 	return body;
