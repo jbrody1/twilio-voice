@@ -26,7 +26,10 @@
     "gcloud": "0.36.0",
     "twilio": "2.2.1",
     "nodemailer": "2.5.0",
-    "auth0": "2.4.0",
+    "raven": "1.1.1",
+    "lodash": "4.8.2",
+    "auth0": "2.7.0",
+
     "webtask-tools": "*"
   },
   "engines": {

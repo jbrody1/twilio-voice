@@ -114,7 +114,7 @@ module.exports.handleVoicemail = function(req, res) {
 			action: echo(new twilio.TwimlResponse().record(record)),
 		}, function(gather) {
 			//gather.say({ voice: 'alice'}, 'Please leave a message')
-			gather.play({}, 'https://s3-us-west-1.amazonaws.com/jbrody-public/audio/voicemail-python.mp3')
+			gather.play({}, env.voicemail_location)
 		})
 		.record(record);
 	} else if (req.params.RecordingStatus === 'completed' || req.params.TranscriptionStatus === 'completed') {

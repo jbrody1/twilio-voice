@@ -5,11 +5,14 @@ if [ ! -f "env.properties" ]; then
   exit 1
 fi
 
+npm install
+
 . env.properties
 
 if [ -z "${webtask_container}" ] || \
    [ -z "${sentry_yrl}" ] || \
    [ -z "${dialer_location}" ] || \
+   [ -z "${voicemail_location}" ] || \
    [ -z "${watson_stt_username}" ] || \
    [ -z "${watson_stt_password}" ]
    [ -z "${auth0_api_key}" ] || \
@@ -17,6 +20,8 @@ if [ -z "${webtask_container}" ] || \
    [ -z "${auth0_token}" ] || \
    [ -z "${auth0_domain}" ] || \
    [ -z "${auth0_login_url}" ] || \
+   [ -z "${twilio_account_sid}" ] || \
+   [ -z "${twilio_auth_token}" ] || \
    [ -z "${google_id}" ] || \
    [ -z "${google_refresh_token}" ] || \
    [ -z "${google_project_id}" ] || \
@@ -35,12 +40,15 @@ cat > src/env.js <<EOL
 module.exports.webtask_container = '${webtask_container}';
 module.exports.sentry_url = '${sentry_url}';
 module.exports.dialer_location = '${dialer_location}';
+module.exports.voicemail_location = '${voicemail_location}';
 module.exports.watson_stt_username = '${watson_stt_username}';
 module.exports.watson_stt_password = '${watson_stt_password}';
 module.exports.auth0_api_key = '${auth0_api_key}';
 module.exports.auth0_token = '${auth0_token}';
 module.exports.auth0_domain = '${auth0_domain}';
 module.exports.auth0_login_url = '${auth0_login_url}';
+module.exports.twilio_account_sid = '${twilio_account_sid}';
+module.exports.twilio_auth_token = '${twilio_auth_token}';
 module.exports.google_id = '${google_id}';
 module.exports.google_refresh_token = '${google_refresh_token}';
 module.exports.google_project_id = '${google_project_id}';
@@ -70,8 +78,12 @@ done
 
 echo "Wrote src/views.js"
 
-wt create --bundle src/webtask.js -n twilio-voice-stage
-wt create --bundle src/webtask.js -n twilio-voice
+#wt create --bundle src/webtask.js -n twilio-voice-stage
+#wt create --bundle src/webtask.js -n twilio-voice
+
 #wt create src/google-verification.js -n google19fff256032e0baf.html
-#wt-bundle -m -o build/webtask.js src/webtask.js
+
+wt-bundle -m -o build/webtask.js src/webtask.js
+wt create build/webtask.js -n twilio-voice-stage
+wt create build/webtask.js -n twilio-voice
 
