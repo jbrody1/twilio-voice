@@ -21,7 +21,7 @@ var speechToText = watson.speech_to_text({
 var tryFormat = function(user, phoneNumber) {
 	// (try to) convert an E164 phone number to national format
 	if (auth.hasTwilioAuth(user)) {
-		var lookup = new twilio.LookupsClient(user.app_metadata.twilio_account_sid, user.app_metadata.twilio_auth_token);
+		var lookup = new twilio.LookupsClient(user.twilio_account_sid, user.twilio_auth_token);
 		return promise.denodeify(lookup.phoneNumbers(phoneNumber).get)()
 		.then(function(result) {
 			logger.debug('lookup for phone number ' + phoneNumber, result);

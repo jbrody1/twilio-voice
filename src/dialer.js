@@ -18,7 +18,7 @@ module.exports.handleDialer = function(req, res) {
 		var useVoip = auth.hasTwilioAuth(user) && hasWebRTC && !isMobile;
 		if (useVoip) {
 			// if using voip, redirect to the soft phone dialer page
-			var capability = new twilio.Capability(user.app_metadata.twilio_account_sid, user.app_metadata.twilio_auth_token);
+			var capability = new twilio.Capability(user.twilio_account_sid, user.twilio_auth_token);
 			capability.allowClientOutgoing('AP8532d2cd0cbe2c84a7c9be698c9537c7');
 			var token = capability.generate();
 			var hash = '#' + querystring.stringify({

@@ -241,8 +241,8 @@ var emailToSms = function(emails) {
 			.then(function(user) {
 				if (auth.hasTwilioAuth(user)) {
 					logger.debug('sending sms for user', user);
-					txt.twilioAccountSid = user.app_metadata.twilio_account_sid;
-					txt.twilioAuthToken = user.app_metadata.twilio_auth_token;
+					txt.twilioAccountSid = user.twilio_account_sid;
+					txt.twilioAuthToken = user.twilio_auth_token;
 					return txt;
 				} else {
 					logger.warn('not sending sms for user with no twilio credentials', user);
