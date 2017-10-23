@@ -81,11 +81,6 @@ module.exports.generateDialerUrl = function(email, from, to) {
 	return env.webtask_container + '/twilio-voice/dialer?' + query;
 };
 
-module.exports.generateLoginUrl = function(email) {
-	// given an email, generate a link to login
-	return env.auth0_login_url;
-};
-
 module.exports.generateHeaders = function(message) {
 	// given an email message with phone numbers in from and to fields,
 	// populate correct values for from, to, and reply-to SMTP headers

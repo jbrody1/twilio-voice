@@ -21,13 +21,11 @@ module.exports.handleSms = function(req, res) {
 			.then(function(formattedPhone) {
 				var hasAuth = auth.hasTwilioAuth(user);
 				var dialerUrl = email.generateDialerUrl(user.email, req.params.To, req.params.From);
-				var loginUrl = email.generateLoginUrl(user.email);
 				var params = {
 					text: req.params.Body,
 					formattedPhone: formattedPhone,
 					hasAuth: hasAuth,
 					dialerUrl: dialerUrl,
-					loginUrl: loginUrl,
 				};
 				return email.generateHeaders({
 					from: req.params.From,

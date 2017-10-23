@@ -133,7 +133,6 @@ module.exports.handleVoicemail = function(req, res) {
 				.then(function(formattedPhone) {
 					var hasAuth = auth.hasTwilioAuth(user);
 					var dialerUrl = email.generateDialerUrl(user.email, req.params.To, req.params.From);
-					var loginUrl = email.generateLoginUrl(user.email);
 					var params = {
 						twilio: transcription,
 						watson: watson,
@@ -141,7 +140,6 @@ module.exports.handleVoicemail = function(req, res) {
 						hasAuth: hasAuth,
 						recordingUrl: req.params.RecordingUrl,
 						dialerUrl: dialerUrl,
-						loginUrl: loginUrl,
 					};
 					return email.generateHeaders({
 						from: req.params.From,
