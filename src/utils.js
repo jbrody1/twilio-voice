@@ -1,10 +1,18 @@
 'use strict';
+var env = require('./env');
 var promise = require('promise');
 var winston = require('winston');
+var sentry = require('./winston-sentry');
 var logger = new winston.Logger({
 	//level: 'debug',
 	level: 'info',
-	transports: [ new winston.transports.Console() ],
+	transports: [
+		new winston.transports.Console(),
+		new sentry({
+			level: 'verbose',
+			dsn: env.sentry_url,
+		})
+	],
 });
 module.exports.logger = logger;
 

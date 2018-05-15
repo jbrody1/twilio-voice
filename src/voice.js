@@ -10,13 +10,6 @@ var request = require('request');
 var pug = require('pug');
 var promise = require('promise');
 var streamToPromise = require('stream-to-promise');
-var watson = require('watson-developer-cloud');
-var speechToText = watson.speech_to_text({
-	url: 'https://stream.watsonplatform.net/speech-to-text/api',
-	version: 'v1',
-	username: env.watson_stt_username,
-	password: env.watson_stt_password,
-});
 
 var tryFormat = function(user, phoneNumber) {
 	// (try to) convert an E164 phone number to national format
@@ -36,32 +29,6 @@ var tryFormat = function(user, phoneNumber) {
 	}
 };
 module.exports.tryFormat = tryFormat;
-
-var transcribeWatson = function(url) {
-	// transcribe a wav audio file to text using watson
-	var transcript = speechToText.createRecognizeStream({
-		content_type: 'audio/wav',
-		model: 'en-US_NarrowbandModel',
-		smart_formatting: true,
-	});
-	transcript.setEncoding('utf8');
-	// download the audio file
-	request(url).pipe(transcript);
-	// stream to watson
-	return streamToPromise(transcript)
-	// convert response buffer to string
-	.then(function(buf) {
-		return buf.toString('utf8');
-	})
-	// replace %HESITATION with ellipses
-	.then(function(str) {
-		return str ? str.replace(/ %HESITATION/g, '...') : str;
-	})
-	.catch(function(err) {
-		logger.error('watson transcription failed', err);
-	});
-};
-module.exports.transcribeWatson = transcribeWatson;
 
 var parseSipEndpoint = function(endpoint) {
 	// parse "sip:+12345678900@sip.example.com" to "+12345678900"
@@ -121,40 +88,34 @@ module.exports.handleVoicemail = function(req, res) {
 		// handle a voicemail recording that has been captured (and optionally transcribed) and send via email
 		auth.getOrCreateUser(req.params.email)
 		.then(function(user) {
-			// watson transcription
-			return transcribeWatson(req.params.RecordingUrl)
-			.then(function(watson) {
-				var transcription = req.params.TranscriptionText ? req.params.TranscriptionText.replace(/ \n\n/g, '..') : '';
-				logger.info('twilio', transcription);
-				logger.info('watson', watson);
-				// format phone number
-				return tryFormat(user, req.params.From)
-				// generate email
-				.then(function(formattedPhone) {
-					var hasAuth = auth.hasTwilioAuth(user);
-					var dialerUrl = email.generateDialerUrl(user.email, req.params.To, req.params.From);
-					var params = {
-						twilio: transcription,
-						watson: watson,
-						formattedPhone: formattedPhone,
-						hasAuth: hasAuth,
-						recordingUrl: req.params.RecordingUrl,
-						dialerUrl: dialerUrl,
-					};
-					return email.generateHeaders({
-						from: req.params.From,
-						to: req.params.To,
-						email: user.email,
-						hasAuth: hasAuth,
-						formattedPhone: formattedPhone,
-						subject: 'Voicemail from ' + formattedPhone,
-						html: pug.render(views.voicemail, params),
-						text: pug.render(views.voicemailPlain, params),
-					});
-				})
-				// send email
-				.then(email.sendGmail);
-			});
+			var transcription = req.params.TranscriptionText ? req.params.TranscriptionText.replace(/ \n\n/g, '..') : '';
+			logger.info('twilio', transcription);
+			// format phone number
+			return tryFormat(user, req.params.From)
+			// generate email
+			.then(function(formattedPhone) {
+				var hasAuth = auth.hasTwilioAuth(user);
+				var dialerUrl = email.generateDialerUrl(user.email, req.params.To, req.params.From);
+				var params = {
+					twilio: transcription,
+					formattedPhone: formattedPhone,
+					hasAuth: hasAuth,
+					recordingUrl: req.params.RecordingUrl,
+					dialerUrl: dialerUrl,
+				};
+				return email.generateHeaders({
+					from: req.params.From,
+					to: req.params.To,
+					email: user.email,
+					hasAuth: hasAuth,
+					formattedPhone: formattedPhone,
+					subject: 'Voicemail from ' + formattedPhone,
+					html: pug.render(views.voicemail, params),
+					text: pug.render(views.voicemailPlain, params),
+				});
+			})
+			// send email
+			.then(email.sendGmail);
 		})
 		.catch(function(err) {
 			logger.error('failed to email voicemail', err);
