@@ -1,0 +1,11 @@
+paste in browser:
+
+https://accounts.google.com/o/oauth2/auth?client_id=[client id]&response_type=code&approval_prompt=force&access_type=offline&redirect_uri=[redirect uri]&scope=https://mail.google.com/
+
+then curl:
+
+curl \
+--request POST \
+--data "code=[code from above]&client_id=[client id]&client_secret=[client secret]&redirect_uri=[redirect uri]&grant_type=authorization_code" \
+https://accounts.google.com/o/oauth2/token
+
