@@ -68,5 +68,5 @@ echo "Wrote src/views.js"
 
 wt create -b src/webtask.js -n twilio-voice-stage
 wt create -b src/webtask.js -n twilio-voice
-wt create src/google-verification.js -n google19fff256032e0baf.html
+#wt create src/google-verification.js -n google19fff256032e0baf.html
 

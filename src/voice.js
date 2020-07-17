@@ -66,7 +66,9 @@ var echo = function(twiml) {
 
 module.exports.handleVoicemail = function(req, res) {
 	var twiml = new twilio.TwimlResponse();
-	if (req.params.Direction === 'inbound' && req.params.DialCallStatus === 'no-answer') {
+	if (req.params.From === req.params.To) {
+		twiml.say({ voice: 'alice'}, 'Goodbye');
+	} else if (req.params.Direction === 'inbound' && req.params.DialCallStatus === 'no-answer') {
 		// handle an incoming call that was not answered and generate twiml to capture voicemail
 		var record = {
 			action: echo(new twilio.TwimlResponse().hangup()),

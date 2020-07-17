@@ -12,10 +12,12 @@ var entities = require('html-entities').AllHtmlEntities;
 var nodemailer = require('nodemailer');
 var google = require('googleapis');
 var gmail = google.gmail('v1');
+/*
 var gcloud = require('google-cloud')({
 	projectId: env.google_project_id,
 	credentials: json.parse(env.google_cloud_json),
 });
+*/
 
 // set up oauth credentials for our gmail account
 var oauth = new google.auth.OAuth2(
