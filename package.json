@@ -17,7 +17,7 @@
     "lodash": "4.17.19",
     "nodemailer": "2.5.0",
     "promise": "7.0.1",
-    "pug": "3.0.0",
+    "pug": "3.0.1",
     "querystring": "0.2.0",
     "raven": "1.1.1",
     "request": "2.88.2",
